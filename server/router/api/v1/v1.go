@@ -33,12 +33,13 @@ type APIV1Service struct {
 	v1pb.UnimplementedShortcutServiceServer
 	v1pb.UnimplementedIdentityProviderServiceServer
 
-	Secret                  string
-	Profile                 *profile.Profile
-	Store                   *store.Store
-	MarkdownService         markdown.Service
-	SSEHub                  *SSEHub
-	NotificationEmailSender notification.EmailSender
+	Secret                         string
+	Profile                        *profile.Profile
+	Store                          *store.Store
+	MarkdownService                markdown.Service
+	SSEHub                         *SSEHub
+	NotificationEmailSender        notification.EmailSender
+	NotificationAnyhostEmailSender notification.AnyhostEmailSender
 
 	// thumbnailSemaphore limits concurrent thumbnail generation to prevent memory exhaustion
 	thumbnailSemaphore       *semaphore.Weighted
@@ -54,14 +55,15 @@ func NewAPIV1Service(secret string, profile *profile.Profile, store *store.Store
 		markdown.WithMentionExtension(),
 	)
 	return &APIV1Service{
-		Secret:                   secret,
-		Profile:                  profile,
-		Store:                    store,
-		MarkdownService:          markdownService,
-		SSEHub:                   NewSSEHub(),
-		NotificationEmailSender:  nil,
-		thumbnailSemaphore:       semaphore.NewWeighted(3), // Limit to 3 concurrent thumbnail generations
-		imageProcessingSemaphore: semaphore.NewWeighted(2),
+		Secret:                         secret,
+		Profile:                        profile,
+		Store:                          store,
+		MarkdownService:                markdownService,
+		SSEHub:                         NewSSEHub(),
+		NotificationEmailSender:        nil,
+		NotificationAnyhostEmailSender: nil,
+		thumbnailSemaphore:             semaphore.NewWeighted(3), // Limit to 3 concurrent thumbnail generations
+		imageProcessingSemaphore:       semaphore.NewWeighted(2),
 	}
 }
 

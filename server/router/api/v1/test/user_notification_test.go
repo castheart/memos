@@ -182,6 +182,77 @@ func TestCreateMemoCommentSendsEmailNotificationWhenEnabled(t *testing.T) {
 	require.NotContains(t, sentMessage.Body, "Base memo for email")
 }
 
+func TestCreateMemoCommentSendsAnyhostEmailWhenConfigured(t *testing.T) {
+	ctx := context.Background()
+	ts := NewTestService(t)
+	defer ts.Cleanup()
+
+	t.Setenv("ANYHOST_EMAIL_API_URL", "https://email.anyhost.test")
+	t.Setenv("ANYHOST_EMAIL_TOKEN", "test-token")
+	t.Setenv("ANYHOST_WORKSPACE_ID", "wsp_test")
+	t.Setenv("ANYHOST_PROJECT_ID", "prj_test")
+	t.Setenv("ANYHOST_ENVIRONMENT_NAME", "dev")
+
+	var sentConfig *email.AnyhostConfig
+	var sentMessage *email.Message
+	var sentIdempotencyKey string
+	var sentMetadata map[string]string
+	ts.Service.NotificationAnyhostEmailSender = func(
+		config *email.AnyhostConfig,
+		message *email.Message,
+		idempotencyKey string,
+		metadata map[string]string,
+	) {
+		sentConfig = config
+		sentMessage = message
+		sentIdempotencyKey = idempotencyKey
+		sentMetadata = metadata
+	}
+
+	owner, err := ts.CreateRegularUser(ctx, "anyhost-comment-owner")
+	require.NoError(t, err)
+	ownerCtx := ts.CreateUserContext(ctx, owner.ID)
+
+	commenter, err := ts.CreateRegularUser(ctx, "anyhost-commenter")
+	require.NoError(t, err)
+	commenterCtx := ts.CreateUserContext(ctx, commenter.ID)
+
+	memo, err := ts.Service.CreateMemo(ownerCtx, &apiv1.CreateMemoRequest{
+		Memo: &apiv1.Memo{
+			Content:    "Base memo for Anyhost email",
+			Visibility: apiv1.Visibility_PUBLIC,
+		},
+	})
+	require.NoError(t, err)
+
+	comment, err := ts.Service.CreateMemoComment(commenterCtx, &apiv1.CreateMemoCommentRequest{
+		Name: memo.Name,
+		Comment: &apiv1.Memo{
+			Content:    "Anyhost email comment content",
+			Visibility: apiv1.Visibility_PUBLIC,
+		},
+	})
+	require.NoError(t, err)
+
+	messageType := storepb.InboxMessage_MEMO_COMMENT
+	inboxes, err := ts.Store.ListInboxes(ctx, &store.FindInbox{
+		ReceiverID:  &owner.ID,
+		MessageType: &messageType,
+	})
+	require.NoError(t, err)
+	require.Len(t, inboxes, 1)
+
+	require.NotNil(t, sentConfig)
+	require.Equal(t, "https://email.anyhost.test", sentConfig.APIURL)
+	require.Equal(t, "dev", sentConfig.EnvironmentName)
+	require.NotNil(t, sentMessage)
+	require.Equal(t, []string{owner.Email}, sentMessage.To)
+	require.Contains(t, sentMessage.Subject, "commented on your memo")
+	require.Contains(t, sentMessage.Body, fmt.Sprintf("http://localhost:8080/%s#%s", memo.Name, strings.TrimPrefix(comment.Name, "memos/")))
+	require.Equal(t, fmt.Sprintf("memos:inbox:%d:v1", inboxes[0].ID), sentIdempotencyKey)
+	require.Equal(t, map[string]string{"message_type": "memo_comment"}, sentMetadata)
+}
+
 func TestCreateMemoMentionSendsEmailNotificationWhenEnabled(t *testing.T) {
 	ctx := context.Background()
 	ts := NewTestService(t)

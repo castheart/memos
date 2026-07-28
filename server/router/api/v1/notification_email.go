@@ -18,7 +18,7 @@ func (s *APIV1Service) createInboxWithEmailNotification(ctx context.Context, inb
 }
 
 func (s *APIV1Service) dispatchInboxEmailNotificationBestEffort(ctx context.Context, inbox *store.Inbox) {
-	dispatcher := notification.NewEmailDispatcher(s.Profile, s.Store, s.NotificationEmailSender)
+	dispatcher := notification.NewEmailDispatcher(s.Profile, s.Store, s.NotificationEmailSender, s.NotificationAnyhostEmailSender)
 	if err := dispatcher.DispatchInboxEmail(ctx, inbox); err != nil {
 		slog.Warn("Failed to dispatch inbox email notification",
 			slog.Any("err", err),

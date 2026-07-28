@@ -17,22 +17,33 @@ import (
 // EmailSender sends a prepared email message with the given SMTP configuration.
 type EmailSender func(*email.Config, *email.Message)
 
+// AnyhostEmailSender sends a rendered email through Anyhost Project Email.
+type AnyhostEmailSender func(*email.AnyhostConfig, *email.Message, string, map[string]string)
+
 // EmailDispatcher dispatches notification emails for inbox events.
 type EmailDispatcher struct {
-	profile *profile.Profile
-	store   *store.Store
-	sender  EmailSender
+	profile            *profile.Profile
+	store              *store.Store
+	sender             EmailSender
+	anyhostSender      AnyhostEmailSender
+	smtpSenderInjected bool
 }
 
 // NewEmailDispatcher creates a notification email dispatcher.
-func NewEmailDispatcher(profile *profile.Profile, store *store.Store, sender EmailSender) *EmailDispatcher {
+func NewEmailDispatcher(profile *profile.Profile, store *store.Store, sender EmailSender, anyhostSender AnyhostEmailSender) *EmailDispatcher {
+	smtpSenderInjected := sender != nil
 	if sender == nil {
 		sender = email.SendAsync
 	}
+	if anyhostSender == nil {
+		anyhostSender = email.SendAnyhostAsync
+	}
 	return &EmailDispatcher{
-		profile: profile,
-		store:   store,
-		sender:  sender,
+		profile:            profile,
+		store:              store,
+		sender:             sender,
+		anyhostSender:      anyhostSender,
+		smtpSenderInjected: smtpSenderInjected,
 	}
 }
 
@@ -42,13 +53,25 @@ func (d *EmailDispatcher) DispatchInboxEmail(ctx context.Context, inbox *store.I
 		return nil
 	}
 
-	setting, err := d.store.GetInstanceNotificationSetting(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to get notification setting")
+	var anyhostConfig *email.AnyhostConfig
+	if !d.smtpSenderInjected {
+		var err error
+		anyhostConfig, err = email.LoadAnyhostConfigFromEnv()
+		if err != nil {
+			return errors.Wrap(err, "invalid Anyhost email runtime configuration")
+		}
 	}
-	emailSetting := setting.GetEmail()
-	if emailSetting == nil || !emailSetting.Enabled {
-		return nil
+
+	var emailSetting *storepb.InstanceNotificationSetting_EmailSetting
+	if anyhostConfig == nil {
+		setting, err := d.store.GetInstanceNotificationSetting(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to get notification setting")
+		}
+		emailSetting = setting.GetEmail()
+		if emailSetting == nil || !emailSetting.Enabled {
+			return nil
+		}
 	}
 	if d.baseURL() == "" {
 		slog.Warn("Skipping inbox email notification because instance URL is required",
@@ -85,6 +108,17 @@ func (d *EmailDispatcher) DispatchInboxEmail(ctx context.Context, inbox *store.I
 	if message == nil {
 		return nil
 	}
+
+	if anyhostConfig != nil {
+		d.anyhostSender(
+			anyhostConfig,
+			message,
+			fmt.Sprintf("memos:inbox:%d:v1", inbox.ID),
+			map[string]string{"message_type": anyhostEmailMessageType(inbox.Message.Type)},
+		)
+		return nil
+	}
+
 	message.ReplyTo = emailSetting.ReplyTo
 
 	config := EmailConfigFromInstanceSetting(emailSetting)
@@ -94,6 +128,17 @@ func (d *EmailDispatcher) DispatchInboxEmail(ctx context.Context, inbox *store.I
 
 	d.sender(config, message)
 	return nil
+}
+
+func anyhostEmailMessageType(messageType storepb.InboxMessage_Type) string {
+	switch messageType {
+	case storepb.InboxMessage_MEMO_COMMENT:
+		return "memo_comment"
+	case storepb.InboxMessage_MEMO_MENTION:
+		return "memo_mention"
+	default:
+		return "notification"
+	}
 }
 
 // EmailConfigFromInstanceSetting converts persisted notification settings into SMTP config.

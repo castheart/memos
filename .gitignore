@@ -31,3 +31,5 @@ dist
 
 # Frontend test coverage output (Vitest + @vitest/coverage-v8).
 web/coverage/
+.agents/
+.anyhost/

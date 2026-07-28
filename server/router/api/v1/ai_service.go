@@ -3,6 +3,8 @@ package v1
 import (
 	"bytes"
 	"context"
+	stderrors "errors"
+	"fmt"
 	"mime"
 	"net/http"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/usememos/memos/internal/ai"
 	"github.com/usememos/memos/internal/ai/audiollm"
 	audiollmgemini "github.com/usememos/memos/internal/ai/audiollm/gemini"
+	anyhostimagegen "github.com/usememos/memos/internal/ai/imagegen/anyhost"
 	"github.com/usememos/memos/internal/ai/stt"
 	sttopenai "github.com/usememos/memos/internal/ai/stt/openai"
 	v1pb "github.com/usememos/memos/proto/gen/api/v1"
@@ -23,6 +26,7 @@ import (
 const (
 	maxTranscriptionAudioSizeBytes = 25 * MebiByte
 	maxTranscriptionFilenameLength = 255
+	maxImageGenerationPromptLength = 8000
 )
 
 var supportedTranscriptionContentTypes = map[string]bool{
@@ -42,6 +46,14 @@ var supportedTranscriptionContentTypes = map[string]bool{
 	"video/mp4":    true,
 	"video/mpeg":   true,
 	"video/webm":   true,
+}
+
+var supportedImageGenerationAspectRatios = map[string]bool{
+	"1:1":  true,
+	"4:3":  true,
+	"3:4":  true,
+	"16:9": true,
+	"9:16": true,
 }
 
 // Transcribe transcribes an audio file using an instance AI provider.
@@ -118,6 +130,97 @@ func (s *APIV1Service) Transcribe(ctx context.Context, request *v1pb.TranscribeR
 		return nil, status.Errorf(codes.Internal, "failed to transcribe audio: %v", err)
 	}
 	return &v1pb.TranscribeResponse{Text: text}, nil
+}
+
+// GenerateImage generates an image with Google Nano Banana Pro through the Anyhost Model API.
+func (s *APIV1Service) GenerateImage(ctx context.Context, request *v1pb.GenerateImageRequest) (*v1pb.GenerateImageResponse, error) {
+	user, err := s.fetchCurrentUser(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get current user: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.Unauthenticated, "user not authenticated")
+	}
+
+	prompt := strings.TrimSpace(request.GetPrompt())
+	if prompt == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "prompt is required")
+	}
+	if len([]rune(prompt)) > maxImageGenerationPromptLength {
+		return nil, status.Errorf(codes.InvalidArgument, "prompt is too long; maximum length is %d characters", maxImageGenerationPromptLength)
+	}
+	aspectRatio := strings.TrimSpace(request.GetAspectRatio())
+	if aspectRatio == "" {
+		aspectRatio = "1:1"
+	}
+	if !supportedImageGenerationAspectRatios[aspectRatio] {
+		return nil, status.Errorf(codes.InvalidArgument, "aspect ratio %q is not supported", aspectRatio)
+	}
+
+	config, err := anyhostimagegen.LoadConfig()
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "image generation is not configured: %v", err)
+	}
+	client, err := anyhostimagegen.NewClient(config, anyhostimagegen.Options{})
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "image generation is not configured: %v", err)
+	}
+
+	response, err := client.Generate(ctx, anyhostimagegen.Request{
+		Prompt:      prompt,
+		AspectRatio: aspectRatio,
+		UserID:      fmt.Sprintf("memos-user-%d", user.ID),
+	})
+	if err != nil {
+		return nil, mapAnyhostImageGenerationError(err)
+	}
+
+	return &v1pb.GenerateImageResponse{
+		Content:          response.Content,
+		ContentType:      response.ContentType,
+		Filename:         response.Filename,
+		Model:            response.Model,
+		GenerationId:     response.GenerationID,
+		SettlementStatus: response.Usage.SettlementStatus,
+		Cost:             response.Usage.Cost,
+		Credits:          response.Usage.Credits,
+	}, nil
+}
+
+func mapAnyhostImageGenerationError(err error) error {
+	switch {
+	case stderrors.Is(err, context.Canceled):
+		return status.Error(codes.Canceled, "image generation was canceled")
+	case stderrors.Is(err, context.DeadlineExceeded):
+		return status.Error(codes.DeadlineExceeded, "image generation timed out")
+	}
+
+	var apiErr *anyhostimagegen.APIError
+	if !stderrors.As(err, &apiErr) {
+		return status.Errorf(codes.Internal, "failed to generate image: %v", err)
+	}
+
+	switch apiErr.Code {
+	case "invalid_api_key":
+		return status.Error(codes.Unauthenticated, "image generation credentials are invalid")
+	case "insufficient_credits", "resource_budget_exceeded":
+		return status.Errorf(codes.ResourceExhausted, "image generation is unavailable: %s", apiErr.Code)
+	case "resource_disabled", "model_not_found", "model_retired", "model_unavailable", "model_capability_unsupported":
+		return status.Errorf(codes.FailedPrecondition, "image generation is unavailable: %s", apiErr.Code)
+	case "model_upstream_unavailable":
+		return status.Error(codes.Unavailable, "image generation provider is temporarily unavailable")
+	default:
+		switch apiErr.StatusCode {
+		case http.StatusUnauthorized:
+			return status.Error(codes.Unauthenticated, "image generation credentials are invalid")
+		case http.StatusPaymentRequired, http.StatusTooManyRequests:
+			return status.Error(codes.ResourceExhausted, "image generation quota is unavailable")
+		case http.StatusBadGateway, http.StatusServiceUnavailable:
+			return status.Error(codes.Unavailable, "image generation provider is temporarily unavailable")
+		default:
+			return status.Error(codes.Internal, "image generation request failed")
+		}
+	}
 }
 
 func (*APIV1Service) transcribeViaSTT(

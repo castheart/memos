@@ -214,6 +214,168 @@ func (x *TranscribeResponse) GetText() string {
 	return ""
 }
 
+type GenerateImageRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Required. Natural-language description of the image to generate.
+	Prompt string `protobuf:"bytes,1,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	// Optional. Output aspect ratio. Supported values: 1:1, 4:3, 3:4, 16:9, 9:16.
+	AspectRatio   string `protobuf:"bytes,2,opt,name=aspect_ratio,json=aspectRatio,proto3" json:"aspect_ratio,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateImageRequest) Reset() {
+	*x = GenerateImageRequest{}
+	mi := &file_api_v1_ai_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateImageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateImageRequest) ProtoMessage() {}
+
+func (x *GenerateImageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_ai_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateImageRequest.ProtoReflect.Descriptor instead.
+func (*GenerateImageRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_ai_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GenerateImageRequest) GetPrompt() string {
+	if x != nil {
+		return x.Prompt
+	}
+	return ""
+}
+
+func (x *GenerateImageRequest) GetAspectRatio() string {
+	if x != nil {
+		return x.AspectRatio
+	}
+	return ""
+}
+
+type GenerateImageResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Generated image bytes.
+	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	// MIME type of the generated image.
+	ContentType string `protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	// Suggested filename for attaching the image to a memo.
+	Filename string `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
+	// Exact Anyhost Catalog model ID that generated the image.
+	Model string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	// Anyhost Generation ID for usage and settlement lookup.
+	GenerationId string `protobuf:"bytes,5,opt,name=generation_id,json=generationId,proto3" json:"generation_id,omitempty"`
+	// Settlement state returned by Anyhost.
+	SettlementStatus string `protobuf:"bytes,6,opt,name=settlement_status,json=settlementStatus,proto3" json:"settlement_status,omitempty"`
+	// Final USD cost. Populated only when settlement_status is "settled".
+	Cost string `protobuf:"bytes,7,opt,name=cost,proto3" json:"cost,omitempty"`
+	// Final Model Credit debit. Populated only when settlement_status is "settled".
+	Credits       string `protobuf:"bytes,8,opt,name=credits,proto3" json:"credits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateImageResponse) Reset() {
+	*x = GenerateImageResponse{}
+	mi := &file_api_v1_ai_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateImageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateImageResponse) ProtoMessage() {}
+
+func (x *GenerateImageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_ai_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateImageResponse.ProtoReflect.Descriptor instead.
+func (*GenerateImageResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_ai_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GenerateImageResponse) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
+func (x *GenerateImageResponse) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetGenerationId() string {
+	if x != nil {
+		return x.GenerationId
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetSettlementStatus() string {
+	if x != nil {
+		return x.SettlementStatus
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetCost() string {
+	if x != nil {
+		return x.Cost
+	}
+	return ""
+}
+
+func (x *GenerateImageResponse) GetCredits() string {
+	if x != nil {
+		return x.Credits
+	}
+	return ""
+}
+
 var File_api_v1_ai_service_proto protoreflect.FileDescriptor
 
 const file_api_v1_ai_service_proto_rawDesc = "" +
@@ -228,10 +390,23 @@ const file_api_v1_ai_service_proto_rawDesc = "" +
 	"\fcontent_type\x18\x04 \x01(\tB\x03\xe0A\x01R\vcontentTypeB\b\n" +
 	"\x06source\"(\n" +
 	"\x12TranscribeResponse\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\x86\x01\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"[\n" +
+	"\x14GenerateImageRequest\x12\x1b\n" +
+	"\x06prompt\x18\x01 \x01(\tB\x03\xe0A\x02R\x06prompt\x12&\n" +
+	"\faspect_ratio\x18\x02 \x01(\tB\x03\xe0A\x01R\vaspectRatio\"\x86\x02\n" +
+	"\x15GenerateImageResponse\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\x12!\n" +
+	"\fcontent_type\x18\x02 \x01(\tR\vcontentType\x12\x1a\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\x12\x14\n" +
+	"\x05model\x18\x04 \x01(\tR\x05model\x12#\n" +
+	"\rgeneration_id\x18\x05 \x01(\tR\fgenerationId\x12+\n" +
+	"\x11settlement_status\x18\x06 \x01(\tR\x10settlementStatus\x12\x12\n" +
+	"\x04cost\x18\a \x01(\tR\x04cost\x12\x18\n" +
+	"\acredits\x18\b \x01(\tR\acredits2\x8f\x02\n" +
 	"\tAIService\x12y\n" +
 	"\n" +
-	"Transcribe\x12\x1f.memos.api.v1.TranscribeRequest\x1a .memos.api.v1.TranscribeResponse\"(\xdaA\x05audio\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/ai:transcribeB\xa6\x01\n" +
+	"Transcribe\x12\x1f.memos.api.v1.TranscribeRequest\x1a .memos.api.v1.TranscribeResponse\"(\xdaA\x05audio\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/ai:transcribe\x12\x86\x01\n" +
+	"\rGenerateImage\x12\".memos.api.v1.GenerateImageRequest\x1a#.memos.api.v1.GenerateImageResponse\",\xdaA\x06prompt\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/v1/ai:generateImageB\xa6\x01\n" +
 	"\x10com.memos.api.v1B\x0eAiServiceProtoP\x01Z0github.com/usememos/memos/proto/gen/api/v1;apiv1\xa2\x02\x03MAX\xaa\x02\fMemos.Api.V1\xca\x02\fMemos\\Api\\V1\xe2\x02\x18Memos\\Api\\V1\\GPBMetadata\xea\x02\x0eMemos::Api::V1b\x06proto3"
 
 var (
@@ -246,18 +421,22 @@ func file_api_v1_ai_service_proto_rawDescGZIP() []byte {
 	return file_api_v1_ai_service_proto_rawDescData
 }
 
-var file_api_v1_ai_service_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_api_v1_ai_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_api_v1_ai_service_proto_goTypes = []any{
-	(*TranscribeRequest)(nil),  // 0: memos.api.v1.TranscribeRequest
-	(*TranscriptionAudio)(nil), // 1: memos.api.v1.TranscriptionAudio
-	(*TranscribeResponse)(nil), // 2: memos.api.v1.TranscribeResponse
+	(*TranscribeRequest)(nil),     // 0: memos.api.v1.TranscribeRequest
+	(*TranscriptionAudio)(nil),    // 1: memos.api.v1.TranscriptionAudio
+	(*TranscribeResponse)(nil),    // 2: memos.api.v1.TranscribeResponse
+	(*GenerateImageRequest)(nil),  // 3: memos.api.v1.GenerateImageRequest
+	(*GenerateImageResponse)(nil), // 4: memos.api.v1.GenerateImageResponse
 }
 var file_api_v1_ai_service_proto_depIdxs = []int32{
 	1, // 0: memos.api.v1.TranscribeRequest.audio:type_name -> memos.api.v1.TranscriptionAudio
 	0, // 1: memos.api.v1.AIService.Transcribe:input_type -> memos.api.v1.TranscribeRequest
-	2, // 2: memos.api.v1.AIService.Transcribe:output_type -> memos.api.v1.TranscribeResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	3, // 2: memos.api.v1.AIService.GenerateImage:input_type -> memos.api.v1.GenerateImageRequest
+	2, // 3: memos.api.v1.AIService.Transcribe:output_type -> memos.api.v1.TranscribeResponse
+	4, // 4: memos.api.v1.AIService.GenerateImage:output_type -> memos.api.v1.GenerateImageResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -278,7 +457,7 @@ func file_api_v1_ai_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_ai_service_proto_rawDesc), len(file_api_v1_ai_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

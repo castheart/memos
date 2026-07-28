@@ -2,7 +2,9 @@ package test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -280,5 +282,135 @@ func TestTranscribe(t *testing.T) {
 		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "transcription is not configured")
+	})
+}
+
+func TestGenerateImage(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("requires authentication", func(t *testing.T) {
+		ts := NewTestService(t)
+		defer ts.Cleanup()
+
+		_, err := ts.Service.GenerateImage(ctx, &v1pb.GenerateImageRequest{Prompt: "A paper kite"})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "user not authenticated")
+	})
+
+	t.Run("requires Anyhost Model API runtime configuration", func(t *testing.T) {
+		ts := NewTestService(t)
+		defer ts.Cleanup()
+
+		user, err := ts.CreateRegularUser(ctx, "image-unconfigured")
+		require.NoError(t, err)
+		userCtx := ts.CreateUserContext(ctx, user.ID)
+		t.Setenv("ANYHOST_MODEL_API_KEY", "")
+		t.Setenv("ANYHOST_MODEL_API_BASE_URL", "")
+		t.Setenv("ANYHOST_MODEL_API_RESOURCE_ID", "")
+
+		_, err = ts.Service.GenerateImage(userCtx, &v1pb.GenerateImageRequest{Prompt: "A paper kite"})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "image generation is not configured")
+	})
+
+	t.Run("generates an inline image and preserves Generation metadata", func(t *testing.T) {
+		ts := NewTestService(t)
+		defer ts.Cleanup()
+
+		user, err := ts.CreateRegularUser(ctx, "image-user")
+		require.NoError(t, err)
+		userCtx := ts.CreateUserContext(ctx, user.ID)
+
+		pngHeader := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
+		modelServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "/v1/chat/completions", r.URL.Path)
+			require.Equal(t, "Bearer runtime-key", r.Header.Get("Authorization"))
+
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+			require.Equal(t, "google/gemini-3-pro-image", body["model"])
+			require.Equal(t, fmt.Sprintf("memos-user-%d", user.ID), body["user"])
+			require.Equal(t, map[string]any{"aspect_ratio": "3:4"}, body["image_config"])
+
+			w.Header().Set("x-anyhost-generation-id", "gen-image-test")
+			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+				"model": "google/gemini-3-pro-image",
+				"choices": []map[string]any{{
+					"message": map[string]any{
+						"images": []map[string]any{{
+							"image_url": map[string]string{
+								"url": "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngHeader),
+							},
+						}},
+					},
+				}},
+				"usage": map[string]string{
+					"settlement_status": "settled",
+					"cost":              "0.04",
+					"credits":           "4",
+				},
+			}))
+		}))
+		defer modelServer.Close()
+
+		t.Setenv("ANYHOST_MODEL_API_KEY", "runtime-key")
+		t.Setenv("ANYHOST_MODEL_API_BASE_URL", modelServer.URL+"/v1")
+		t.Setenv("ANYHOST_MODEL_API_RESOURCE_ID", "mrs_test")
+
+		response, err := ts.Service.GenerateImage(userCtx, &v1pb.GenerateImageRequest{
+			Prompt:      "A paper kite",
+			AspectRatio: "3:4",
+		})
+		require.NoError(t, err)
+		require.Equal(t, pngHeader, response.Content)
+		require.Equal(t, "image/png", response.ContentType)
+		require.Equal(t, "nano-banana-pro.png", response.Filename)
+		require.Equal(t, "google/gemini-3-pro-image", response.Model)
+		require.Equal(t, "gen-image-test", response.GenerationId)
+		require.Equal(t, "settled", response.SettlementStatus)
+		require.Equal(t, "0.04", response.Cost)
+		require.Equal(t, "4", response.Credits)
+	})
+
+	t.Run("validates aspect ratio before creating a Generation", func(t *testing.T) {
+		ts := NewTestService(t)
+		defer ts.Cleanup()
+
+		user, err := ts.CreateRegularUser(ctx, "image-ratio-user")
+		require.NoError(t, err)
+		userCtx := ts.CreateUserContext(ctx, user.ID)
+
+		_, err = ts.Service.GenerateImage(userCtx, &v1pb.GenerateImageRequest{
+			Prompt:      "A paper kite",
+			AspectRatio: "2:1",
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "aspect ratio")
+	})
+
+	t.Run("maps credit exhaustion by stable error code", func(t *testing.T) {
+		ts := NewTestService(t)
+		defer ts.Cleanup()
+
+		user, err := ts.CreateRegularUser(ctx, "image-credit-user")
+		require.NoError(t, err)
+		userCtx := ts.CreateUserContext(ctx, user.ID)
+
+		modelServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusPaymentRequired)
+			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+				"error": map[string]string{"code": "insufficient_credits"},
+			}))
+		}))
+		defer modelServer.Close()
+
+		t.Setenv("ANYHOST_MODEL_API_KEY", "runtime-key")
+		t.Setenv("ANYHOST_MODEL_API_BASE_URL", modelServer.URL)
+		t.Setenv("ANYHOST_MODEL_API_RESOURCE_ID", "mrs_test")
+
+		_, err = ts.Service.GenerateImage(userCtx, &v1pb.GenerateImageRequest{Prompt: "A paper kite"})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "ResourceExhausted")
+		require.Contains(t, err.Error(), "insufficient_credits")
 	})
 }

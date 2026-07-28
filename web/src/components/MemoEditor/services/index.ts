@@ -1,5 +1,6 @@
 export * from "./cacheService";
 export * from "./errorService";
+export * from "./imageGenerationService";
 export * from "./memoService";
 export * from "./transcriptionService";
 export * from "./uploadService";

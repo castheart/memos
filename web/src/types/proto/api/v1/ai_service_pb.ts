@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/ai_service.proto.
  */
 export const file_api_v1_ai_service: GenFile = /*@__PURE__*/
-  fileDesc("ChdhcGkvdjEvYWlfc2VydmljZS5wcm90bxIMbWVtb3MuYXBpLnYxIkkKEVRyYW5zY3JpYmVSZXF1ZXN0EjQKBWF1ZGlvGAEgASgLMiAubWVtb3MuYXBpLnYxLlRyYW5zY3JpcHRpb25BdWRpb0ID4EECIncKElRyYW5zY3JpcHRpb25BdWRpbxIWCgdjb250ZW50GAEgASgMQgPgQQRIABINCgN1cmkYAiABKAlIABIVCghmaWxlbmFtZRgDIAEoCUID4EEBEhkKDGNvbnRlbnRfdHlwZRgEIAEoCUID4EEBQggKBnNvdXJjZSIiChJUcmFuc2NyaWJlUmVzcG9uc2USDAoEdGV4dBgBIAEoCTKGAQoJQUlTZXJ2aWNlEnkKClRyYW5zY3JpYmUSHy5tZW1vcy5hcGkudjEuVHJhbnNjcmliZVJlcXVlc3QaIC5tZW1vcy5hcGkudjEuVHJhbnNjcmliZVJlc3BvbnNlIijaQQVhdWRpb4LT5JMCGjoBKiIVL2FwaS92MS9haTp0cmFuc2NyaWJlQqYBChBjb20ubWVtb3MuYXBpLnYxQg5BaVNlcnZpY2VQcm90b1ABWjBnaXRodWIuY29tL3VzZW1lbW9zL21lbW9zL3Byb3RvL2dlbi9hcGkvdjE7YXBpdjGiAgNNQViqAgxNZW1vcy5BcGkuVjHKAgxNZW1vc1xBcGlcVjHiAhhNZW1vc1xBcGlcVjFcR1BCTWV0YWRhdGHqAg5NZW1vczo6QXBpOjpWMWIGcHJvdG8z", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior]);
+  fileDesc("ChdhcGkvdjEvYWlfc2VydmljZS5wcm90bxIMbWVtb3MuYXBpLnYxIkkKEVRyYW5zY3JpYmVSZXF1ZXN0EjQKBWF1ZGlvGAEgASgLMiAubWVtb3MuYXBpLnYxLlRyYW5zY3JpcHRpb25BdWRpb0ID4EECIncKElRyYW5zY3JpcHRpb25BdWRpbxIWCgdjb250ZW50GAEgASgMQgPgQQRIABINCgN1cmkYAiABKAlIABIVCghmaWxlbmFtZRgDIAEoCUID4EEBEhkKDGNvbnRlbnRfdHlwZRgEIAEoCUID4EEBQggKBnNvdXJjZSIiChJUcmFuc2NyaWJlUmVzcG9uc2USDAoEdGV4dBgBIAEoCSJGChRHZW5lcmF0ZUltYWdlUmVxdWVzdBITCgZwcm9tcHQYASABKAlCA+BBAhIZCgxhc3BlY3RfcmF0aW8YAiABKAlCA+BBASKwAQoVR2VuZXJhdGVJbWFnZVJlc3BvbnNlEg8KB2NvbnRlbnQYASABKAwSFAoMY29udGVudF90eXBlGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEg0KBW1vZGVsGAQgASgJEhUKDWdlbmVyYXRpb25faWQYBSABKAkSGQoRc2V0dGxlbWVudF9zdGF0dXMYBiABKAkSDAoEY29zdBgHIAEoCRIPCgdjcmVkaXRzGAggASgJMo8CCglBSVNlcnZpY2USeQoKVHJhbnNjcmliZRIfLm1lbW9zLmFwaS52MS5UcmFuc2NyaWJlUmVxdWVzdBogLm1lbW9zLmFwaS52MS5UcmFuc2NyaWJlUmVzcG9uc2UiKNpBBWF1ZGlvgtPkkwIaOgEqIhUvYXBpL3YxL2FpOnRyYW5zY3JpYmUShgEKDUdlbmVyYXRlSW1hZ2USIi5tZW1vcy5hcGkudjEuR2VuZXJhdGVJbWFnZVJlcXVlc3QaIy5tZW1vcy5hcGkudjEuR2VuZXJhdGVJbWFnZVJlc3BvbnNlIizaQQZwcm9tcHSC0+STAh06ASoiGC9hcGkvdjEvYWk6Z2VuZXJhdGVJbWFnZUKmAQoQY29tLm1lbW9zLmFwaS52MUIOQWlTZXJ2aWNlUHJvdG9QAVowZ2l0aHViLmNvbS91c2VtZW1vcy9tZW1vcy9wcm90by9nZW4vYXBpL3YxO2FwaXYxogIDTUFYqgIMTWVtb3MuQXBpLlYxygIMTWVtb3NcQXBpXFYx4gIYTWVtb3NcQXBpXFYxXEdQQk1ldGFkYXRh6gIOTWVtb3M6OkFwaTo6VjFiBnByb3RvMw", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior]);
 
 /**
  * @generated from message memos.api.v1.TranscribeRequest
@@ -101,6 +101,100 @@ export const TranscribeResponseSchema: GenMessage<TranscribeResponse> = /*@__PUR
   messageDesc(file_api_v1_ai_service, 2);
 
 /**
+ * @generated from message memos.api.v1.GenerateImageRequest
+ */
+export type GenerateImageRequest = Message<"memos.api.v1.GenerateImageRequest"> & {
+  /**
+   * Required. Natural-language description of the image to generate.
+   *
+   * @generated from field: string prompt = 1;
+   */
+  prompt: string;
+
+  /**
+   * Optional. Output aspect ratio. Supported values: 1:1, 4:3, 3:4, 16:9, 9:16.
+   *
+   * @generated from field: string aspect_ratio = 2;
+   */
+  aspectRatio: string;
+};
+
+/**
+ * Describes the message memos.api.v1.GenerateImageRequest.
+ * Use `create(GenerateImageRequestSchema)` to create a new message.
+ */
+export const GenerateImageRequestSchema: GenMessage<GenerateImageRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_ai_service, 3);
+
+/**
+ * @generated from message memos.api.v1.GenerateImageResponse
+ */
+export type GenerateImageResponse = Message<"memos.api.v1.GenerateImageResponse"> & {
+  /**
+   * Generated image bytes.
+   *
+   * @generated from field: bytes content = 1;
+   */
+  content: Uint8Array;
+
+  /**
+   * MIME type of the generated image.
+   *
+   * @generated from field: string content_type = 2;
+   */
+  contentType: string;
+
+  /**
+   * Suggested filename for attaching the image to a memo.
+   *
+   * @generated from field: string filename = 3;
+   */
+  filename: string;
+
+  /**
+   * Exact Anyhost Catalog model ID that generated the image.
+   *
+   * @generated from field: string model = 4;
+   */
+  model: string;
+
+  /**
+   * Anyhost Generation ID for usage and settlement lookup.
+   *
+   * @generated from field: string generation_id = 5;
+   */
+  generationId: string;
+
+  /**
+   * Settlement state returned by Anyhost.
+   *
+   * @generated from field: string settlement_status = 6;
+   */
+  settlementStatus: string;
+
+  /**
+   * Final USD cost. Populated only when settlement_status is "settled".
+   *
+   * @generated from field: string cost = 7;
+   */
+  cost: string;
+
+  /**
+   * Final Model Credit debit. Populated only when settlement_status is "settled".
+   *
+   * @generated from field: string credits = 8;
+   */
+  credits: string;
+};
+
+/**
+ * Describes the message memos.api.v1.GenerateImageResponse.
+ * Use `create(GenerateImageResponseSchema)` to create a new message.
+ */
+export const GenerateImageResponseSchema: GenMessage<GenerateImageResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_ai_service, 4);
+
+/**
  * @generated from service memos.api.v1.AIService
  */
 export const AIService: GenService<{
@@ -113,6 +207,16 @@ export const AIService: GenService<{
     methodKind: "unary";
     input: typeof TranscribeRequestSchema;
     output: typeof TranscribeResponseSchema;
+  },
+  /**
+   * GenerateImage generates an image with the instance's managed image model.
+   *
+   * @generated from rpc memos.api.v1.AIService.GenerateImage
+   */
+  generateImage: {
+    methodKind: "unary";
+    input: typeof GenerateImageRequestSchema;
+    output: typeof GenerateImageResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_api_v1_ai_service, 0);

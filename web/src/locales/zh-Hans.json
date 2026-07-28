@@ -175,6 +175,24 @@
       "link-memo": "链接备忘录",
       "upload-file": "上传文件"
     },
+    "image-generation": {
+      "aspect-1-1": "方形 · 1:1",
+      "aspect-3-4": "竖图 · 3:4",
+      "aspect-4-3": "横图 · 4:3",
+      "aspect-9-16": "故事 · 9:16",
+      "aspect-16-9": "宽屏 · 16:9",
+      "aspect-ratio": "画面比例",
+      "description": "描述你想要的画面，并将生成结果添加到这条 Memo。",
+      "error": "图片生成失败",
+      "generate": "生成图片",
+      "generating": "生成中...",
+      "model": "模型：Google Nano Banana Pro（Gemini 3 Pro Image）",
+      "prompt-label": "提示词",
+      "prompt-placeholder": "描述主体、构图、光线、风格，以及画面中需要出现的文字……",
+      "success": "生成图片已添加",
+      "title": "使用 Nano Banana Pro 生图",
+      "trigger": "AI 生图"
+    },
     "audio-recorder": {
       "attachment-label": "录音",
       "attachment-label-with-time": "录音 {{time}}",

@@ -6,6 +6,31 @@ info:
     title: ""
     version: 0.0.1
 paths:
+    /api/v1/ai:generateImage:
+        post:
+            tags:
+                - AIService
+            description: GenerateImage generates an image with the instance's managed image model.
+            operationId: AIService_GenerateImage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GenerateImageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenerateImageResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/v1/ai:transcribe:
         post:
             tags:
@@ -2701,6 +2726,45 @@ components:
                 logoUrl:
                     type: string
             description: Custom profile configuration for instance branding.
+        GenerateImageRequest:
+            required:
+                - prompt
+            type: object
+            properties:
+                prompt:
+                    type: string
+                    description: Required. Natural-language description of the image to generate.
+                aspectRatio:
+                    type: string
+                    description: 'Optional. Output aspect ratio. Supported values: 1:1, 4:3, 3:4, 16:9, 9:16.'
+        GenerateImageResponse:
+            type: object
+            properties:
+                content:
+                    type: string
+                    description: Generated image bytes.
+                    format: bytes
+                contentType:
+                    type: string
+                    description: MIME type of the generated image.
+                filename:
+                    type: string
+                    description: Suggested filename for attaching the image to a memo.
+                model:
+                    type: string
+                    description: Exact Anyhost Catalog model ID that generated the image.
+                generationId:
+                    type: string
+                    description: Anyhost Generation ID for usage and settlement lookup.
+                settlementStatus:
+                    type: string
+                    description: Settlement state returned by Anyhost.
+                cost:
+                    type: string
+                    description: Final USD cost. Populated only when settlement_status is "settled".
+                credits:
+                    type: string
+                    description: Final Model Credit debit. Populated only when settlement_status is "settled".
         GetCurrentUserResponse:
             type: object
             properties:

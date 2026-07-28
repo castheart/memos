@@ -22,7 +22,7 @@ export interface AttachmentItem {
 export interface LocalFile {
   readonly file: File;
   readonly previewUrl: string;
-  readonly origin?: "audio_recording" | "upload";
+  readonly origin?: "ai_generated" | "audio_recording" | "upload";
   readonly audioMeta?: {
     readonly durationSeconds: number;
   };

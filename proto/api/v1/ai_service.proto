@@ -17,6 +17,15 @@ service AIService {
     };
     option (google.api.method_signature) = "audio";
   }
+
+  // GenerateImage generates an image with the instance's managed image model.
+  rpc GenerateImage(GenerateImageRequest) returns (GenerateImageResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/ai:generateImage"
+      body: "*"
+    };
+    option (google.api.method_signature) = "prompt";
+  }
 }
 
 message TranscribeRequest {
@@ -43,4 +52,38 @@ message TranscriptionAudio {
 message TranscribeResponse {
   // The transcribed text.
   string text = 1;
+}
+
+message GenerateImageRequest {
+  // Required. Natural-language description of the image to generate.
+  string prompt = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. Output aspect ratio. Supported values: 1:1, 4:3, 3:4, 16:9, 9:16.
+  string aspect_ratio = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message GenerateImageResponse {
+  // Generated image bytes.
+  bytes content = 1;
+
+  // MIME type of the generated image.
+  string content_type = 2;
+
+  // Suggested filename for attaching the image to a memo.
+  string filename = 3;
+
+  // Exact Anyhost Catalog model ID that generated the image.
+  string model = 4;
+
+  // Anyhost Generation ID for usage and settlement lookup.
+  string generation_id = 5;
+
+  // Settlement state returned by Anyhost.
+  string settlement_status = 6;
+
+  // Final USD cost. Populated only when settlement_status is "settled".
+  string cost = 7;
+
+  // Final Model Credit debit. Populated only when settlement_status is "settled".
+  string credits = 8;
 }

@@ -1,6 +1,20 @@
 import { uniqBy } from "lodash-es";
-import { CheckIcon, FileIcon, ImageIcon, LinkIcon, LoaderIcon, MapPinIcon, Maximize2Icon, MicIcon, PlusIcon, TypeIcon } from "lucide-react";
+import {
+  CheckIcon,
+  FileIcon,
+  ImageIcon,
+  LinkIcon,
+  LoaderIcon,
+  MapPinIcon,
+  Maximize2Icon,
+  MicIcon,
+  PlusIcon,
+  TypeIcon,
+  WandSparklesIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { ImageGenerationDialog } from "@/components/MemoEditor/components";
 import { LinkMemoDialog, LocationDialog } from "@/components/MemoMetadata";
 import type { MapPoint } from "@/components/map/types";
 import { useReverseGeocoding } from "@/components/map/useReverseGeocoding";
@@ -15,7 +29,8 @@ import {
 import { useDebouncedEffect } from "@/hooks";
 import type { MemoRelation } from "@/types/proto/api/v1/memo_service_pb";
 import { useTranslate } from "@/utils/i18n";
-import { useFileUpload, useLinkMemo, useLocation } from "../hooks";
+import { useBlobUrls, useFileUpload, useLinkMemo, useLocation } from "../hooks";
+import { errorService, imageGenerationService } from "../services";
 import { useEditorContext, useEditorSelector } from "../state";
 import type { InsertMenuProps } from "../types";
 import type { LocalFile } from "../types/attachment";
@@ -35,6 +50,9 @@ const InsertMenu = (props: InsertMenuProps) => {
 
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [imageGenerationDialogOpen, setImageGenerationDialogOpen] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const { createBlobUrl } = useBlobUrls();
 
   const { fileInputRef, selectingFlag, handleFileInputChange, handleUploadClick } = useFileUpload((newFiles: LocalFile[]) => {
     newFiles.forEach((file) => dispatch(actions.addLocalFile(file)));
@@ -122,9 +140,43 @@ const InsertMenu = (props: InsertMenuProps) => {
     handleUploadClick();
   }, [handleUploadClick]);
 
+  const handleGenerateImage = useCallback(
+    async (prompt: string, aspectRatio: string) => {
+      if (isGeneratingImage) {
+        return;
+      }
+      setIsGeneratingImage(true);
+      dispatch(actions.setLoading("uploading", true));
+      try {
+        const generated = await imageGenerationService.generateImage(prompt, aspectRatio);
+        dispatch(
+          actions.addLocalFile({
+            file: generated.file,
+            previewUrl: createBlobUrl(generated.file),
+            origin: "ai_generated",
+          }),
+        );
+        setImageGenerationDialogOpen(false);
+        toast.success(t("editor.image-generation.success"));
+      } catch (error) {
+        toast.error(errorService.getErrorMessage(error) || t("editor.image-generation.error"));
+      } finally {
+        dispatch(actions.setLoading("uploading", false));
+        setIsGeneratingImage(false);
+      }
+    },
+    [actions, createBlobUrl, dispatch, isGeneratingImage, t],
+  );
+
   // Insert actions (add content).
   const insertItems = [
     { key: "media", label: t("attachment-library.tabs.media"), icon: ImageIcon, onClick: handleMediaUploadClick },
+    {
+      key: "generate-image",
+      label: t("editor.image-generation.trigger"),
+      icon: WandSparklesIcon,
+      onClick: () => setImageGenerationDialogOpen(true),
+    },
     { key: "audio", label: t("editor.audio-recorder.trigger"), icon: MicIcon, onClick: props.onAudioRecorderClick },
     { key: "file", label: t("common.file"), icon: FileIcon, onClick: handleFileUploadClick },
     { key: "link", label: t("editor.insert-menu.link-memo"), icon: LinkIcon, onClick: handleOpenLinkDialog },
@@ -189,6 +241,13 @@ const InsertMenu = (props: InsertMenuProps) => {
         onPlaceholderChange={setPlaceholder}
         onCancel={handleLocationCancel}
         onConfirm={handleLocationConfirm}
+      />
+
+      <ImageGenerationDialog
+        open={imageGenerationDialogOpen}
+        onOpenChange={setImageGenerationDialogOpen}
+        isGenerating={isGeneratingImage}
+        onGenerate={handleGenerateImage}
       />
     </>
   );

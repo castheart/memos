@@ -35,12 +35,16 @@ const (
 const (
 	// AIServiceTranscribeProcedure is the fully-qualified name of the AIService's Transcribe RPC.
 	AIServiceTranscribeProcedure = "/memos.api.v1.AIService/Transcribe"
+	// AIServiceGenerateImageProcedure is the fully-qualified name of the AIService's GenerateImage RPC.
+	AIServiceGenerateImageProcedure = "/memos.api.v1.AIService/GenerateImage"
 )
 
 // AIServiceClient is a client for the memos.api.v1.AIService service.
 type AIServiceClient interface {
 	// Transcribe transcribes an audio file using an instance AI provider.
 	Transcribe(context.Context, *connect.Request[v1.TranscribeRequest]) (*connect.Response[v1.TranscribeResponse], error)
+	// GenerateImage generates an image with the instance's managed image model.
+	GenerateImage(context.Context, *connect.Request[v1.GenerateImageRequest]) (*connect.Response[v1.GenerateImageResponse], error)
 }
 
 // NewAIServiceClient constructs a client for the memos.api.v1.AIService service. By default, it
@@ -60,12 +64,19 @@ func NewAIServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...c
 			connect.WithSchema(aIServiceMethods.ByName("Transcribe")),
 			connect.WithClientOptions(opts...),
 		),
+		generateImage: connect.NewClient[v1.GenerateImageRequest, v1.GenerateImageResponse](
+			httpClient,
+			baseURL+AIServiceGenerateImageProcedure,
+			connect.WithSchema(aIServiceMethods.ByName("GenerateImage")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // aIServiceClient implements AIServiceClient.
 type aIServiceClient struct {
-	transcribe *connect.Client[v1.TranscribeRequest, v1.TranscribeResponse]
+	transcribe    *connect.Client[v1.TranscribeRequest, v1.TranscribeResponse]
+	generateImage *connect.Client[v1.GenerateImageRequest, v1.GenerateImageResponse]
 }
 
 // Transcribe calls memos.api.v1.AIService.Transcribe.
@@ -73,10 +84,17 @@ func (c *aIServiceClient) Transcribe(ctx context.Context, req *connect.Request[v
 	return c.transcribe.CallUnary(ctx, req)
 }
 
+// GenerateImage calls memos.api.v1.AIService.GenerateImage.
+func (c *aIServiceClient) GenerateImage(ctx context.Context, req *connect.Request[v1.GenerateImageRequest]) (*connect.Response[v1.GenerateImageResponse], error) {
+	return c.generateImage.CallUnary(ctx, req)
+}
+
 // AIServiceHandler is an implementation of the memos.api.v1.AIService service.
 type AIServiceHandler interface {
 	// Transcribe transcribes an audio file using an instance AI provider.
 	Transcribe(context.Context, *connect.Request[v1.TranscribeRequest]) (*connect.Response[v1.TranscribeResponse], error)
+	// GenerateImage generates an image with the instance's managed image model.
+	GenerateImage(context.Context, *connect.Request[v1.GenerateImageRequest]) (*connect.Response[v1.GenerateImageResponse], error)
 }
 
 // NewAIServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -92,10 +110,18 @@ func NewAIServiceHandler(svc AIServiceHandler, opts ...connect.HandlerOption) (s
 		connect.WithSchema(aIServiceMethods.ByName("Transcribe")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aIServiceGenerateImageHandler := connect.NewUnaryHandler(
+		AIServiceGenerateImageProcedure,
+		svc.GenerateImage,
+		connect.WithSchema(aIServiceMethods.ByName("GenerateImage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/memos.api.v1.AIService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AIServiceTranscribeProcedure:
 			aIServiceTranscribeHandler.ServeHTTP(w, r)
+		case AIServiceGenerateImageProcedure:
+			aIServiceGenerateImageHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -107,4 +133,8 @@ type UnimplementedAIServiceHandler struct{}
 
 func (UnimplementedAIServiceHandler) Transcribe(context.Context, *connect.Request[v1.TranscribeRequest]) (*connect.Response[v1.TranscribeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("memos.api.v1.AIService.Transcribe is not implemented"))
+}
+
+func (UnimplementedAIServiceHandler) GenerateImage(context.Context, *connect.Request[v1.GenerateImageRequest]) (*connect.Response[v1.GenerateImageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("memos.api.v1.AIService.GenerateImage is not implemented"))
 }

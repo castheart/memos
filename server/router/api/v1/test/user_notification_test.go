@@ -192,6 +192,8 @@ func TestCreateMemoCommentSendsAnyhostEmailWhenConfigured(t *testing.T) {
 	t.Setenv("ANYHOST_WORKSPACE_ID", "wsp_test")
 	t.Setenv("ANYHOST_PROJECT_ID", "prj_test")
 	t.Setenv("ANYHOST_ENVIRONMENT_NAME", "dev")
+	t.Setenv("MEMOS_EMAIL_BASE_URL", "https://memos-dev.anyhost.test")
+	ts.Profile.InstanceURL = ""
 
 	var sentConfig *email.AnyhostConfig
 	var sentMessage *email.Message
@@ -248,7 +250,7 @@ func TestCreateMemoCommentSendsAnyhostEmailWhenConfigured(t *testing.T) {
 	require.NotNil(t, sentMessage)
 	require.Equal(t, []string{owner.Email}, sentMessage.To)
 	require.Contains(t, sentMessage.Subject, "commented on your memo")
-	require.Contains(t, sentMessage.Body, fmt.Sprintf("http://localhost:8080/%s#%s", memo.Name, strings.TrimPrefix(comment.Name, "memos/")))
+	require.Contains(t, sentMessage.Body, fmt.Sprintf("https://memos-dev.anyhost.test/%s#%s", memo.Name, strings.TrimPrefix(comment.Name, "memos/")))
 	require.Equal(t, fmt.Sprintf("memos:inbox:%d:v1", inboxes[0].ID), sentIdempotencyKey)
 	require.Equal(t, map[string]string{"message_type": "memo_comment"}, sentMetadata)
 }
@@ -309,6 +311,7 @@ func TestCreateMemoCommentSkipsEmailNotificationWithoutInstanceURL(t *testing.T)
 	ts := NewTestService(t)
 	defer ts.Cleanup()
 	ts.Profile.InstanceURL = ""
+	t.Setenv("MEMOS_EMAIL_BASE_URL", "")
 
 	var sentMessage *email.Message
 	ts.Service.NotificationEmailSender = func(_ *email.Config, message *email.Message) {

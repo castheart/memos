@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -326,10 +327,14 @@ func displayNameForEmail(user *store.User) string {
 }
 
 func (d *EmailDispatcher) baseURL() string {
-	if d.profile == nil || strings.TrimSpace(d.profile.InstanceURL) == "" {
-		return ""
+	instanceURL := ""
+	if d.profile != nil {
+		instanceURL = strings.TrimSpace(d.profile.InstanceURL)
 	}
-	return strings.TrimRight(strings.TrimSpace(d.profile.InstanceURL), "/")
+	if instanceURL == "" {
+		instanceURL = strings.TrimSpace(os.Getenv("MEMOS_EMAIL_BASE_URL"))
+	}
+	return strings.TrimRight(instanceURL, "/")
 }
 
 func (d *EmailDispatcher) memoURL(memo *store.Memo) string {

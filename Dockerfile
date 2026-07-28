@@ -1,3 +1,16 @@
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
+WORKDIR /frontend-build/web
+
+RUN corepack enable
+
+# Install frontend dependencies in a separate layer for better caching.
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+COPY web/ ./
+RUN pnpm release
+
 FROM --platform=$BUILDPLATFORM golang:1.26.2-alpine AS backend
 WORKDIR /backend-build
 
@@ -12,8 +25,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Copy source code (use .dockerignore to exclude unnecessary files)
 COPY . .
 
-# Please build frontend first, so that the static files are available.
-# Refer to `pnpm release` in package.json for the build command.
+# Replace the placeholder page with the compiled frontend before embedding it.
+COPY --from=frontend /frontend-build/server/router/frontend/dist ./server/router/frontend/dist
+
 ARG TARGETOS TARGETARCH VERSION=dev COMMIT=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
@@ -49,8 +63,8 @@ WORKDIR /var/opt/memos
 VOLUME /var/opt/memos
 
 ENV TZ="UTC" \
-    MEMOS_PORT="5230"
+    MEMOS_PORT="8080"
 
-EXPOSE 5230
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/memos/entrypoint.sh", "/usr/local/memos/memos"]

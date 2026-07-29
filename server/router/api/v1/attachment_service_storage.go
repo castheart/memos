@@ -45,6 +45,14 @@ func convertAttachmentFromStore(attachment *store.Attachment) *v1pb.Attachment {
 
 // SaveAttachmentBlob saves the blob of attachment based on the storage config.
 func SaveAttachmentBlob(ctx context.Context, profile *profile.Profile, stores *store.Store, create *store.Attachment) error {
+	anyhostStorage, err := s3.LoadAnyhostConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to load Anyhost Storage config")
+	}
+	if anyhostStorage != nil && isCDNMediaType(create.Type) {
+		return saveAnyhostCDNObject(ctx, anyhostStorage, create)
+	}
+
 	instanceStorageSetting, err := stores.GetInstanceStorageSetting(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to find instance storage setting")
@@ -130,6 +138,44 @@ func SaveAttachmentBlob(ctx context.Context, profile *profile.Profile, stores *s
 	return nil
 }
 
+func saveAnyhostCDNObject(ctx context.Context, runtimeConfig *s3.AnyhostConfig, create *store.Attachment) error {
+	relativePath := filepath.ToSlash(replaceFilenameWithPathTemplate(
+		"attachments/{year}/{month}/{uuid}_{filename}",
+		create.Filename,
+	))
+	key, err := runtimeConfig.ObjectKey(relativePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to build Anyhost Storage key")
+	}
+	publicURL, err := runtimeConfig.PublicURL(key)
+	if err != nil {
+		return errors.Wrap(err, "failed to build Anyhost CDN URL")
+	}
+	client, err := s3.NewAnyhostClient(ctx, runtimeConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create Anyhost Storage client")
+	}
+	if _, err := client.UploadPublicObject(ctx, key, create.Type, bytes.NewReader(create.Blob)); err != nil {
+		return errors.Wrap(err, "failed to upload attachment to Anyhost Storage")
+	}
+
+	create.Reference = publicURL
+	create.Blob = nil
+	create.StorageType = storepb.AttachmentStorageType_S3
+	payload := ensureAttachmentPayload(create.Payload)
+	payload.Payload = &storepb.AttachmentPayload_S3Object_{
+		S3Object: &storepb.AttachmentPayload_S3Object{
+			Key: key,
+		},
+	}
+	create.Payload = payload
+	return nil
+}
+
+func isCDNMediaType(contentType string) bool {
+	return strings.HasPrefix(contentType, "image/") || strings.HasPrefix(contentType, "video/")
+}
+
 func (s *APIV1Service) GetAttachmentBlob(attachment *store.Attachment) ([]byte, error) {
 	// For local storage, read the file from the local disk.
 	if attachment.StorageType == storepb.AttachmentStorageType_LOCAL {
@@ -161,14 +207,11 @@ func (s *APIV1Service) GetAttachmentBlob(attachment *store.Attachment) ([]byte, 
 		if s3Object == nil {
 			return nil, errors.New("S3 object payload is missing")
 		}
-		if s3Object.S3Config == nil {
-			return nil, errors.New("S3 config is missing")
-		}
 		if s3Object.Key == "" {
 			return nil, errors.New("S3 object key is missing")
 		}
 
-		s3Client, err := s3.NewClient(context.Background(), s3Object.S3Config)
+		s3Client, err := s3.NewClientForObject(context.Background(), s3Object.S3Config, s3Object.Key)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create S3 client")
 		}

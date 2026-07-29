@@ -90,6 +90,30 @@ func (r *Runner) CheckAndPresign(ctx context.Context) {
 				}
 			}
 
+			if s3ObjectPayload.S3Config == nil {
+				anyhostConfig, err := s3.LoadAnyhostConfigForKey(s3ObjectPayload.Key)
+				if err != nil {
+					slog.Error("Failed to load Anyhost Storage config", "error", err, "attachmentID", attachment.ID)
+					continue
+				}
+				if anyhostConfig != nil {
+					publicURL, err := anyhostConfig.PublicURL(s3ObjectPayload.Key)
+					if err != nil {
+						slog.Error("Failed to build Anyhost CDN URL", "error", err, "attachmentID", attachment.ID)
+						continue
+					}
+					if attachment.Reference != publicURL {
+						if err := r.Store.UpdateAttachment(ctx, &store.UpdateAttachment{
+							ID:        attachment.ID,
+							Reference: &publicURL,
+						}); err != nil {
+							slog.Error("Failed to refresh Anyhost CDN URL", "error", err, "attachmentID", attachment.ID)
+						}
+					}
+					continue
+				}
+			}
+
 			s3Config := instanceStorageSetting.GetS3Config()
 			if s3ObjectPayload.S3Config != nil {
 				s3Config = s3ObjectPayload.S3Config

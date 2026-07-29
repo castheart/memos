@@ -67,6 +67,22 @@ func (c *Client) UploadObject(ctx context.Context, key string, fileType string, 
 	return key, nil
 }
 
+// UploadPublicObject uploads an immutable object intended to be served through
+// a CDN. Callers must use a unique key for every content revision.
+func (c *Client) UploadPublicObject(ctx context.Context, key string, fileType string, content io.Reader) (string, error) {
+	putInput := s3.PutObjectInput{
+		Bucket:       c.Bucket,
+		Key:          aws.String(key),
+		ContentType:  aws.String(fileType),
+		CacheControl: aws.String("public, max-age=31536000, immutable"),
+		Body:         content,
+	}
+	if _, err := c.Client.PutObject(ctx, &putInput); err != nil {
+		return "", err
+	}
+	return key, nil
+}
+
 // PresignGetObject presigns an object in S3.
 func (c *Client) PresignGetObject(ctx context.Context, key string) (string, error) {
 	presignClient := s3.NewPresignClient(c.Client)

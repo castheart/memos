@@ -47,6 +47,9 @@
   },
   "attachment-library": {
     "actions": {
+      "copy-failed": "Failed to copy link",
+      "copy-link": "Copy link",
+      "link-copied": "Link copied",
       "open": "Open",
       "retry": "Retry"
     },

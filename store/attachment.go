@@ -229,17 +229,31 @@ func (s *Store) deleteAttachmentStorageImpl(ctx context.Context, attachment *Att
 			}
 			s3Config := s3ObjectPayload.S3Config
 			if s3Config == nil {
+				anyhostConfig, err := s3.LoadAnyhostConfigForKey(s3ObjectPayload.Key)
+				if err != nil {
+					return errors.Wrap(err, "failed to load Anyhost Storage config")
+				}
+				if anyhostConfig != nil {
+					s3Client, err := s3.NewAnyhostClient(ctx, anyhostConfig)
+					if err != nil {
+						return errors.Wrap(err, "Failed to create Anyhost S3 client")
+					}
+					if err := s3Client.DeleteObject(ctx, s3ObjectPayload.Key); err != nil {
+						return errors.Wrap(err, "Failed to delete Anyhost S3 object")
+					}
+					return nil
+				}
+
 				if instanceStorageSetting == nil {
-					var err error
 					instanceStorageSetting, err = s.GetInstanceStorageSetting(ctx)
 					if err != nil {
 						return errors.Wrap(err, "failed to get instance storage setting")
 					}
 				}
-				if instanceStorageSetting.S3Config == nil {
+				s3Config = instanceStorageSetting.GetS3Config()
+				if s3Config == nil {
 					return errors.Errorf("S3 config is not found")
 				}
-				s3Config = instanceStorageSetting.S3Config
 			}
 
 			s3Client, err := s3.NewClient(ctx, s3Config)
@@ -278,7 +292,11 @@ func AttachmentNeedsInstanceStorageSetting(attachment *Attachment) bool {
 		return false
 	}
 	s3ObjectPayload := attachment.Payload.GetS3Object()
-	return s3ObjectPayload != nil && s3ObjectPayload.S3Config == nil
+	if s3ObjectPayload == nil || s3ObjectPayload.S3Config != nil {
+		return false
+	}
+	anyhostConfig, err := s3.LoadAnyhostConfigForKey(s3ObjectPayload.Key)
+	return err != nil || anyhostConfig == nil
 }
 
 func (s *Store) deleteAttachmentDerivedCaches(attachment *Attachment) {

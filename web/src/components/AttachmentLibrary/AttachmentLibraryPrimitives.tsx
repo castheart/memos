@@ -1,4 +1,5 @@
-import { ExternalLinkIcon } from "lucide-react";
+import { CopyIcon, ExternalLinkIcon } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,11 @@ interface AttachmentSourceChipProps {
 }
 
 interface AttachmentOpenButtonProps {
+  className?: string;
+  href: string;
+}
+
+interface AttachmentCopyLinkButtonProps {
   className?: string;
   href: string;
 }
@@ -80,6 +86,31 @@ export const AttachmentOpenButton = ({ className, href }: AttachmentOpenButtonPr
     >
       <ExternalLinkIcon className="h-3.5 w-3.5" />
       <span className="sr-only">{t("attachment-library.actions.open")}</span>
+    </Button>
+  );
+};
+
+export const AttachmentCopyLinkButton = ({ className, href }: AttachmentCopyLinkButtonProps) => {
+  const t = useTranslate();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(href);
+      toast.success(t("attachment-library.actions.link-copied"));
+    } catch {
+      toast.error(t("attachment-library.actions.copy-failed"));
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn("size-7 shrink-0 rounded-full text-muted-foreground hover:text-foreground", className)}
+      onClick={() => void handleCopy()}
+    >
+      <CopyIcon className="h-3.5 w-3.5" />
+      <span className="sr-only">{t("attachment-library.actions.copy-link")}</span>
     </Button>
   );
 };

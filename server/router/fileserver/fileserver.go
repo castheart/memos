@@ -377,14 +377,11 @@ func (*FileServerService) createS3Client(attachment *store.Attachment) (*s3.Clie
 	if s3Object == nil {
 		return nil, nil, errors.New("S3 object payload is missing")
 	}
-	if s3Object.S3Config == nil {
-		return nil, nil, errors.New("S3 config is missing")
-	}
 	if s3Object.Key == "" {
 		return nil, nil, errors.New("S3 object key is missing")
 	}
 
-	client, err := s3.NewClient(context.Background(), s3Object.S3Config)
+	client, err := s3.NewClientForObject(context.Background(), s3Object.S3Config, s3Object.Key)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create S3 client")
 	}

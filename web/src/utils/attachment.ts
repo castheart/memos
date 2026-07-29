@@ -9,6 +9,10 @@ export const getAttachmentUrl = (attachment: Attachment) => {
 };
 
 export const getAttachmentThumbnailUrl = (attachment: Attachment) => {
+  if (attachment.externalLink && attachment.type.startsWith("image/")) {
+    return attachment.externalLink;
+  }
+
   return `${window.location.origin}/file/${attachment.name}/${attachment.filename}?thumbnail=true`;
 };
 

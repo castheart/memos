@@ -13,6 +13,18 @@ import (
 )
 
 func TestAttachmentNeedsInstanceStorageSetting(t *testing.T) {
+	for _, name := range []string{
+		"ANYHOST_PROJECT_ID",
+		"ANYHOST_ENVIRONMENT_NAME",
+		"S3_BUCKET",
+		"S3_PREFIX",
+		"S3_REGION",
+		"S3_PUBLIC_BASE_URL",
+		"S3_PUBLIC_KEY_PREFIX",
+	} {
+		t.Setenv(name, "")
+	}
+
 	tests := []struct {
 		name       string
 		attachment *store.Attachment
@@ -67,6 +79,29 @@ func TestAttachmentNeedsInstanceStorageSetting(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttachmentDoesNotNeedInstanceStorageSettingForAnyhostObject(t *testing.T) {
+	t.Setenv("ANYHOST_PROJECT_ID", "project")
+	t.Setenv("ANYHOST_ENVIRONMENT_NAME", "dev")
+	t.Setenv("S3_BUCKET", "uploads")
+	t.Setenv("S3_PREFIX", "workspace/project/dev/storage/")
+	t.Setenv("S3_REGION", "us-west-2")
+	t.Setenv("S3_PUBLIC_BASE_URL", "https://cdn.anyhostcloud.com/workspace/project/dev/storage")
+	t.Setenv("S3_PUBLIC_KEY_PREFIX", "workspace/project/dev/storage/")
+
+	attachment := &store.Attachment{
+		StorageType: storepb.AttachmentStorageType_S3,
+		Payload: &storepb.AttachmentPayload{
+			Payload: &storepb.AttachmentPayload_S3Object_{
+				S3Object: &storepb.AttachmentPayload_S3Object{
+					Key: "workspace/project/dev/storage/attachments/image.png",
+				},
+			},
+		},
+	}
+
+	require.False(t, store.AttachmentNeedsInstanceStorageSetting(attachment))
 }
 
 func TestAttachmentStore(t *testing.T) {

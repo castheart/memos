@@ -112,6 +112,38 @@ test_both_set_error() {
     unset MEMOS_DSN MEMOS_DSN_FILE
 }
 
+# Test 6: Anyhost managed Postgres variables configure Memos
+test_anyhost_database_url() {
+    unset MEMOS_DSN MEMOS_DSN_FILE MEMOS_DRIVER
+    export ANYHOST_PROJECT_ID="prj_test"
+    export DATABASE_URL="postgres://test"
+
+    result=$("$SCRIPT_DIR/entrypoint.sh" sh -c 'printf "%s|%s" "$MEMOS_DRIVER" "$MEMOS_DSN"' 2>&1)
+    if [ "$result" = "postgres|postgres://test" ]; then
+        pass "Anyhost DATABASE_URL configures Postgres"
+    else
+        fail "Anyhost DATABASE_URL: expected 'postgres|postgres://test', got '$result'"
+    fi
+    unset ANYHOST_PROJECT_ID DATABASE_URL MEMOS_DRIVER
+}
+
+# Test 7: Explicit Memos database configuration takes precedence
+test_explicit_dsn_over_anyhost_database_url() {
+    unset MEMOS_DSN MEMOS_DSN_FILE MEMOS_DRIVER
+    export MEMOS_DSN="explicit_value"
+    export MEMOS_DRIVER="mysql"
+    export ANYHOST_PROJECT_ID="prj_test"
+    export DATABASE_URL="postgres://test"
+
+    result=$("$SCRIPT_DIR/entrypoint.sh" sh -c 'printf "%s|%s" "$MEMOS_DRIVER" "$MEMOS_DSN"' 2>&1)
+    if [ "$result" = "mysql|explicit_value" ]; then
+        pass "Explicit Memos database configuration takes precedence"
+    else
+        fail "Explicit Memos database configuration: expected 'mysql|explicit_value', got '$result'"
+    fi
+    unset MEMOS_DSN MEMOS_DRIVER ANYHOST_PROJECT_ID DATABASE_URL
+}
+
 # Run all tests
 echo "Running entrypoint.sh tests..."
 echo "================================"
@@ -121,6 +153,8 @@ test_file_env_var_readable
 test_file_env_var_missing
 test_file_env_var_unreadable
 test_both_set_error
+test_anyhost_database_url
+test_explicit_dsn_over_anyhost_database_url
 
 echo "================================"
 echo "Tests completed: ${GREEN}$pass_count passed${NC}, ${RED}$fail_count failed${NC}"

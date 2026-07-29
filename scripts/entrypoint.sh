@@ -49,4 +49,11 @@ file_env() {
 
 file_env "MEMOS_DSN"
 
+# Anyhost managed Postgres injects DATABASE_URL. Prefer an explicitly configured
+# MEMOS_DSN, but otherwise adapt the generated runtime contract to Memos.
+if [ -z "${MEMOS_DSN:-}" ] && [ -n "${DATABASE_URL:-}" ] && [ -n "${ANYHOST_PROJECT_ID:-}" ]; then
+   export MEMOS_DRIVER="postgres"
+   export MEMOS_DSN="$DATABASE_URL"
+fi
+
 exec "$@"
